@@ -1,9 +1,18 @@
 const express = require('express')
 const app = express()
+const cors = require('cors')
+var morgan = require('morgan')
+
+morgan.token('content', function getBody (req, res) {
+    return JSON.stringify(req.body)
+})
 
 app.use(express.json())
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :content'))
+app.use(cors())
 
-let notes = [
+
+let persons = [
     {
         "id": 1,
         "name": "Arto Hellas",
@@ -31,76 +40,76 @@ app.get('/info', (request, response) => {
 
 // Sends back JSON data with names, numbers and ids''
 app.get('/api/persons', (request, response) => {
-    response.json(notes)
+    response.json(persons)
 })
 
 // Sends back individual JSON data //
 app.get('/api/persons/:id', (request, response) => {
     const id = request.params.id
-    const note = notes.find(note => String(note.id) === id)
-    if (id > notes.length) {
+    const person = persons.find(note => String(note.id) === id)
+    if (id > persons.length) {
         return response
             .status(404)
             .send('Invalid ID number, please enter a different number')
     } else {
-        response.json(note)
+        response.json(person)
     }
 })
 
 // Deletes individual person data //
 app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
-    notes = notes.filter(note => note.id !== id)
-    console.log(notes)
+    persons = persons.filter(note => note.id !== id)
 
     response
         .status(204)
         .end()
 })
 
-// Generates new id based on amount of id's 
+// Generates new id based on amount of id's
 const generateID = () => {
-    const maxID = notes.length > 0
-        ? Math.max(...notes.map(note => note.id))
+    const maxID = persons.length > 0
+        ? Math.max(...persons.map(note => note.id))
         : 0
     return maxID + 1
 }
 
-// Edits person data, if content is missing, input fields are missing, or duplicate names are entered
-// the code returns an error message with instructions
+// Edits person data, if content is missing, input fields are missing, or
+// duplicate names are entered the code returns an error message with
+// instructions
 app.post('/api/persons', (request, response) => {
     const body = request.body
 
     if (!body) {
-        return response.status(400).json(
-            { error: 'content missing' }
-        )
+        return response
+            .status(400)
+            .json({error: 'content missing'})
     }
 
     if (body.name === '' || body.number == '') {
-        return response.status(400).json(
-            { error: 'Please fill out all fields' }
-        )
+        return response
+            .status(400)
+            .json({error: 'Please fill out all fields'})
     }
 
-    if (notes.map(note => note.name).includes(body.name)) {
-        return response.status(400).json(
-            {error: 'name must be unique'}
-        )
+    if (persons.map(note => note.name).includes(body.name)) {
+        return response
+            .status(400)
+            .json({error: 'name must be unique'})
     }
 
-    note = {
+    person = {
         "id": generateID(),
         "name": body.name,
         "number": body.number
     }
 
-    notes = notes.concat(note)
+    persons = persons.concat(person)
 
-    response.json(notes)
+    response.json(persons)
 })
 
-const PORT = 3001
+const PORT = process.env.PORT || 3001 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
